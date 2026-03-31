@@ -148,8 +148,8 @@
     },
     "scripts": {
         "prepare": "yarn --cwd webview && yarn install:languageserver",
-        "install:languageserver": "rm -rf ./server && yarn download:languageserver && unzip yang-language-server.zip && mv yang-language-server-0.7.7-esmasth.1 server && cp -r conf server/ && sed -i 's|CLASSPATH=$APP_HOME/lib/|CLASSPATH=$APP_HOME/conf:$APP_HOME/lib/|' server/bin/yang-language-server server/bin/yang-language-server.bat",
-        "download:languageserver": "curl -L -o yang-language-server.zip https://github.com/esmasth/yang-lsp/releases/download/v0.7.7-esmasth.1/yang-language-server_diagram-extension_0.7.7-esmasth.1.zip",
+        "install:languageserver": "rm -rf ./server && yarn download:languageserver && unzip yang-language-server.zip && mv yang-language-server-0.7.7-esmasth.2 server && cp -r conf server/ && sed -i 's|CLASSPATH=$APP_HOME/lib/|CLASSPATH=$APP_HOME/conf:$APP_HOME/lib/|' server/bin/yang-language-server server/bin/yang-language-server.bat",
+        "download:languageserver": "curl -L -o yang-language-server.zip https://github.com/esmasth/yang-lsp/releases/download/v0.7.7-esmasth.2/yang-language-server_diagram-extension_0.7.7-esmasth.2.zip",
         "vscode:prepublish": "yarn clean && yarn lint && webpack --mode=production && yarn --cwd webview vscode:prepublish",
         "clean": "rm -rf ./extension/lib ./extension/pack",
         "build": "webpack --mode=development && yarn lint",

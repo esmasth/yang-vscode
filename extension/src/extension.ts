@@ -56,28 +56,13 @@ function writeContributedSettings(context: ExtensionContext): void {
         .flatMap(c => c.validators ?? [])
         .join(':');
 
-    if (!classpath && !validators) {
-        return;
-    }
-
-    // Merge contributed extensions into bundled-yang.settings
-    const confDir = path.join(context.extensionPath, 'server', 'conf');
-    const settingsPath = path.join(confDir, 'bundled-yang.settings');
-    let settings: Record<string, any> = {};
-    try {
-        settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
-    } catch (_) { /* file may not exist yet */ }
-
-    if (!settings.extension) {
-        settings.extension = {};
-    }
     if (classpath) {
-        settings.extension.classpath = classpath;
+        process.env['YANG_LANGUAGE_SERVER_EXTRA_CLASSPATH'] = classpath;
     }
     if (validators) {
-        settings.extension.validators = validators;
+        const existing = process.env['YANG_LANGUAGE_SERVER_OPTS'] || '';
+        process.env['YANG_LANGUAGE_SERVER_OPTS'] = (`-Dyang.extra.validators=${validators} ` + existing).trim();
     }
-    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 4));
 }
 
 let extension: SprottyLspVscodeExtension | undefined;
