@@ -1,0 +1,13 @@
+{
+    "code-lenses": "off",
+    "semantic-tokens": "off",
+    "formatting": "off",
+    "code-actions": "off",
+    "completion": "off",
+    "hover": "off",
+    "references": "off",
+    "document-symbols": "off",
+    "rename": "off",
+    "definition": "off",
+    "document-highlight": "off"
+}

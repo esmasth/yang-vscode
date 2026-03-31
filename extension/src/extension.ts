@@ -6,18 +6,94 @@
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
  */
 
+import * as fs from 'fs';
 import * as net from 'net';
 import * as os from 'os';
 import * as path from 'path';
 import { SprottyDiagramIdentifier, SprottyWebview } from 'sprotty-vscode';
 import { SprottyLspVscodeExtension, SprottyLspWebview } from 'sprotty-vscode/lib/lsp';
-import { commands, ExtensionContext, Uri, workspace } from 'vscode';
+import { commands, extensions, ExtensionContext, Uri, workspace } from 'vscode';
 import { LanguageClient, LanguageClientOptions, Location as LSLocation, Position as LSPosition, ServerOptions, StreamInfo } from 'vscode-languageclient/node';
+
+export interface YangExtensionContribution {
+    jarPath: string;
+    validators?: string[];
+}
+
+export interface YangExtensionApi {
+    registerExtension(contribution: YangExtensionContribution): void;
+}
+
+const contributedJars: YangExtensionContribution[] = [];
+
+function collectPackageJsonContributions(): void {
+    for (const ext of extensions.all) {
+        const contrib = ext.packageJSON?.["typefox.yang-vscode"]?.extensions;
+        if (contrib && Array.isArray(contrib)) {
+            for (const entry of contrib) {
+                if (entry.jar) {
+                    contributedJars.push({
+                        jarPath: path.join(ext.extensionPath, entry.jar),
+                        validators: entry.validators
+                    });
+                }
+            }
+        }
+    }
+}
+
+function writeContributedSettings(context: ExtensionContext): void {
+    if (contributedJars.length === 0) {
+        return;
+    }
+
+    const separator = os.platform() === 'win32' ? ';' : ':';
+    const classpath = contributedJars
+        .filter(c => fs.existsSync(c.jarPath))
+        .map(c => c.jarPath)
+        .join(separator);
+    const validators = contributedJars
+        .flatMap(c => c.validators ?? [])
+        .join(':');
+
+    if (!classpath && !validators) {
+        return;
+    }
+
+    // Merge contributed extensions into bundled-yang.settings
+    const confDir = path.join(context.extensionPath, 'server', 'conf');
+    const settingsPath = path.join(confDir, 'bundled-yang.settings');
+    let settings: Record<string, any> = {};
+    try {
+        settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+    } catch (_) { /* file may not exist yet */ }
+
+    if (!settings.extension) {
+        settings.extension = {};
+    }
+    if (classpath) {
+        settings.extension.classpath = classpath;
+    }
+    if (validators) {
+        settings.extension.validators = validators;
+    }
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 4));
+}
 
 let extension: SprottyLspVscodeExtension | undefined;
 
-export function activate(context: ExtensionContext) {
+export function activate(context: ExtensionContext): YangExtensionApi {
+    collectPackageJsonContributions();
+    writeContributedSettings(context);
+
+    const api: YangExtensionApi = {
+        registerExtension(contribution: YangExtensionContribution): void {
+            contributedJars.push(contribution);
+        }
+    };
+
     extension = new YangLanguageExtension(context);
+    return api;
 }
 
 export function deactivate(): Thenable<void> {
@@ -53,19 +129,14 @@ export class YangLanguageExtension extends SprottyLspVscodeExtension {
     }
 
     protected activateLanguageClient(context: ExtensionContext): LanguageClient {
-        // Options to control the language client
         const clientOptions: LanguageClientOptions = {
-            // Register the server for plain text documents
             documentSelector: ['yang'],
             synchronize: {
-                // Synchronize the setting section 'yangLanguageServer' to the server
                 configurationSection: 'yangLanguageServer',
-                // Notify the server about file changes to '.yang files contain in the workspace
                 fileEvents: workspace.createFileSystemWatcher('**/*.yang')
             }
         }
         const clientId = {id: 'yangLanguageServer', name: 'YANG Language Server'};
-        // Create the language client and start the client.
         const languageClient = DEBUG
             ? getSocketLanguageClient(clientId, clientOptions, SERVER_PORT)
             : getStdioLanguageClient(clientId, clientOptions, context);
@@ -85,10 +156,7 @@ export class YangLanguageExtension extends SprottyLspVscodeExtension {
             }
         });
 
-        // Push the disposable to the context's subscriptions so that the
-        // client can be deactivated on extension deactivation.
         context.subscriptions.push(disposable);
-
         return languageClient;
     }
 }
@@ -97,8 +165,6 @@ function getStdioLanguageClient(clientId: {id: string, name: string}, clientOpti
     const executable = os.platform() === 'win32' ? 'yang-language-server.bat' : 'yang-language-server';
     const serverModule = context.asAbsolutePath(path.join('server', 'bin', executable));
 
-    // If the extension is launched in debug mode then the debug server options are used
-    // Otherwise the run options are used
     const serverOptions: ServerOptions = {
         run: {
             command: serverModule,

@@ -2,12 +2,12 @@
     "name": "yang-vscode",
     "displayName": "Yangster",
     "description": "YANG editor support and diagrams for VS Code",
-    "version": "2.3.4",
+    "version": "2.3.5-esmasth.1",
     "publisher": "typefox",
     "license": "Apache-2.0",
     "icon": "images/yin_yang.png",
     "engines": {
-        "vscode": "^1.22.0"
+        "vscode": "^1.63.0"
     },
     "categories": [
         "Programming Languages"
@@ -91,7 +91,7 @@
         "jsonValidation": [
             {
                 "fileMatch": "yang.settings",
-                "url": "https://raw.githubusercontent.com/TypeFox/yang-lsp/master/schema/yang-lsp-settings-schema.json"
+                "url": "./server/schema/yang-lsp-settings-schema.json"
             }
         ],
         "menus": {
@@ -148,8 +148,8 @@
     },
     "scripts": {
         "prepare": "yarn --cwd webview && yarn install:languageserver",
-        "install:languageserver": "rm -rf ./server && yarn download:languageserver && unzip yang-language-server.zip && mv yang-language-server-0.7.6 server",
-        "download:languageserver": "curl -L -o yang-language-server.zip https://github.com/TypeFox/yang-lsp/releases/download/v0.7.6/yang-language-server_diagram-extension_0.7.6.zip",
+        "install:languageserver": "rm -rf ./server && yarn download:languageserver && unzip yang-language-server.zip && mv yang-language-server-0.7.7-esmasth.1 server && cp -r conf server/ && sed -i 's|CLASSPATH=$APP_HOME/lib/|CLASSPATH=$APP_HOME/conf:$APP_HOME/lib/|' server/bin/yang-language-server server/bin/yang-language-server.bat",
+        "download:languageserver": "curl -L -o yang-language-server.zip https://github.com/esmasth/yang-lsp/releases/download/v0.7.7-esmasth.1/yang-language-server_diagram-extension_0.7.7-esmasth.1.zip",
         "vscode:prepublish": "yarn clean && yarn lint && webpack --mode=production && yarn --cwd webview vscode:prepublish",
         "clean": "rm -rf ./extension/lib ./extension/pack",
         "build": "webpack --mode=development && yarn lint",
@@ -158,10 +158,10 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/TypeFox/yang-vscode.git"
+        "url": "https://github.com/esmasth/yang-vscode.git"
     },
     "bugs": {
-        "url": "https://github.com/TypeFox/yang-vscode/issues"
+        "url": "https://github.com/esmasth/yang-vscode/issues"
     },
     "galleryBanner": {
         "color": "#1d1d1d",
